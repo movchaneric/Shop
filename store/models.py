@@ -43,19 +43,19 @@ class Order(models.Model):
 		total = 0
 		orderitems = self.orderitem_set.all()
 		for item in orderitems:
-			total += (item.quantity * item.prodcut.price)
+			total += (item.quantity * item.product.price)
 		return total
 	
 
 class OrderItem(models.Model):
 	order = models.ForeignKey(Order, null=True, on_delete=models.SET_NULL)
-	prodcut = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
+	product = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
 	quantity = models.IntegerField(default=0, null=True, blank=True)
 	date_added = models.DateTimeField(auto_now_add=True)
 
 	@property
 	def get_total(self):
-		total = self.prodcut.price * self.quantity
+		total = self.product.price * self.quantity
 		return total
 
 
