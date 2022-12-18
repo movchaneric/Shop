@@ -28,6 +28,17 @@ class Order(models.Model):
 	def __str__(self):
 		return str(self.id)
 
+	@property
+	def checkShipment(self):
+		shipping = False
+		# get orderitems
+		orderItems = self.orderitem_set.all()
+		for item in orderItems:
+			# needs shipping form to show
+			if item.product.digital == False:
+				shipping = True
+		return shipping
+
 	# total cart item QUANTITY
 	@property
 	def get_cart_total(self):

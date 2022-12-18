@@ -3,6 +3,7 @@ from .models import *
 
 from django.http import JsonResponse
 import json
+import datetime
 
 # Create your views here.
 
@@ -15,13 +16,15 @@ def store(request):
 		order, created = Order.objects.get_or_create(customer=customer, complete=False)
 		# get all order item that parent(order) has
 		items = order.orderitem_set.all()
+		orderItems = order.get_cart_total
 	else:
 		items = []
-		order = {'get_cart_total':0, 'get_cart_items':0}
+		order = {'get_cart_total':0, 'get_cart_items':0,'shipping':False}
+		orderItems = order['get_cart_total']
 
 
 	products = Product.objects.all()
-	context = {'products':products,'order':order}
+	context = {'products':products,'order':order,'orderItems':orderItems}
 	return render(request, 'store/store.html', context)
 
 
@@ -33,11 +36,13 @@ def cart(request):
 		order, created = Order.objects.get_or_create(customer=customer, complete=False)
 		# get all order item that parent(order) has
 		items = order.orderitem_set.all()
+		orderItems = order.get_cart_total
 	else:
 		items = []
-		order = {'get_cart_total':0, 'get_cart_items':0}
+		order = {'get_cart_total':0, 'get_cart_items':0,'shipping':False}
+		orderItems = order['get_cart_total']
 	
-	context = {'items':items ,'order':order}
+	context = {'items':items ,'order':order,'orderItems':orderItems}
 	return render(request, 'store/cart.html', context)
 
 
@@ -49,11 +54,13 @@ def checkout(request):
 		order, created = Order.objects.get_or_create(customer=customer, complete=False)
 		# get all order item that parent(order) has
 		items = order.orderitem_set.all()
+		orderItems = order.get_cart_total
 	else:
 		items = []
-		order = {'get_cart_total':0, 'get_cart_items':0}
+		order = {'get_cart_total':0, 'get_cart_items':0,'shipping':False}
+		orderItems = ['get_cart_total']
 	
-	context = {'items':items ,'order':order}
+	context = {'items':items ,'order':order,'orderItems':orderItems}
 	return render(request, 'store/checkout.html', context)
 
 
@@ -90,8 +97,37 @@ def updateItem(request):
 	return JsonResponse('Item was added..', safe=False)
 
 
+def processOrder(request):
+	# create random order id using timestamp()
+	transaction_id = datetime.datetime.now().timestamp()
 
+	# load data from process-order JsonResponse
+	data = json.loads(request.body)
 
+	if request.user.is_authenticated:
+		customer = request.user.customer
+		order, created = Order.objects.get_or_create(customer = customer, complete=False)
+		total = float(data['form']['total'])
+		order.transaction_id = transaction_id
+
+		if total == order.get_cart_items:
+			order.complete = True
+
+		order.save()
+
+		if order.checkShipment == True:
+			ShippingAddress.objects.create(
+				customer=customer,
+				order=order,
+				address = data['shippingForm']['address'],
+				city = data['shippingForm']['city'],
+				state = data['shippingForm']['state'],
+				zipcode = data['shippingForm']['zipcode']
+				)
+	else:
+		print ("User is not authenticated")
+
+	return JsonResponse('payment submitted...', safe= False)
 
 
 

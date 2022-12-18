@@ -78,14 +78,99 @@
 
 				<h5>Items: {{order.get_cart_total}}</h5>
 				<h5>Total: ${{order.get_cart_items|floatformat:2}}</h5>
-
-
-
-
 		 </div>
 	</div>
 
 </div>
+
+<script type="text/javascript">
+	var shipping = '{{order.checkShipment}}'
+	var total = '{{order.get_cart_items}}'
+
+	if(shipping == 'False'){
+		document.getElementById('shipping-info').innerHTML = ' ';
+	}
+	// logged in user do not need to fill name and email 
+	if(user != 'AnonymousUser'){
+		document.getElementById('user-info').innerHTML = ' ';
+	}
+
+	// handle form submission and show payment button
+	var form = document.getElementById('form')
+	form.addEventListener('submit',function(event){
+		event.preventDefault()
+		console.log('Form submitted')
+
+		// hide shipping form
+		document.getElementById('form-button').classList.add('hidden')
+
+		// show payment button
+		document.getElementById('payment-info').classList.remove('hidden')
+	})
+
+	// handle make payment button
+	var payBtn = document.getElementById('payment-info')
+	payBtn.addEventListener('click',function(){
+		submitFormData()
+	})
+	
+
+	function submitFormData(){
+		console.log('pay button clicked...')
+		var userFormData = {
+			'name':null,
+			'email':null,
+			'total':total
+		}
+
+		var shippingForm = {
+			'address':null,
+			'city':null,
+			'state':null,
+			'zipcode':null
+		}
+
+		// items need the shipping form -> fill it with user data
+		if(shipping != 'False'){
+			shippingForm.address = form.address.value
+			shippingForm.city = form.city.value
+			shippingForm.state = form.state.value
+			shippingForm.zipcode = form.zipcode.value
+		}
+
+		// fill user name and email for non signed in users
+		if(user == 'AnonymousUser'){
+			userFormData.name = form.name.value
+			userFormData.email = form.email.value
+		}
+
+		console.log('shippingForm', shippingForm)
+		console.log('userFormData', userFormData)
+
+
+		var url = '/process-order/'
+
+		fetch(url, {
+			method:'POST',
+			headers:{
+				'Content-Type': 'application/json',
+				'X-CSRFToken':csrftoken,
+			},
+			body:JSON.stringify({'form':userFormData, 'shippingForm':shippingForm}),
+		})
+
+		.then((res) => {
+			return res.json()
+		})
+
+		.then((data) => {
+			console.log('success',data)
+			window.alert('Success')
+			window.location.href = "{% url 'store' %}"
+		})
+	}
+
+</script>
 
 
 {% endblock %}
