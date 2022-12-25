@@ -38,9 +38,45 @@ def cart(request):
 		items = order.orderitem_set.all()
 		orderItems = order.get_cart_total
 	else:
+		# if cookie cart get deleted from browser create dummy cookie
+		try:
+			# get cookie from browser and turn cart js dictionary into python dictionary
+			cart = json.loads(request.COOKIES['cart'])
+		except:
+			cart = {}
+
+		print('Cart: ', cart)
+
 		items = []
 		order = {'get_cart_total':0, 'get_cart_items':0,'shipping':False}
 		orderItems = order['get_cart_total']
+
+		for i in cart:
+			orderItems += cart[i]['quantity']
+
+			product = Product.objects.get(id=i)
+
+			total = (product.price * cart[i]['quantity'])
+
+			order['get_cart_items'] += total
+			order['get_cart_total'] += cart[i]['quantity']
+
+			item = {'product':{
+			'id':product.id,
+			'name':product.name,
+			'price':product.price,
+			'image':product.image
+			},
+			'quantity':cart[i]['quantity'],	
+			'get_total':total
+			} 
+			items.append(item)
+
+			# phycal item
+			if product.digital == False:
+				# show shipping form
+				order['shipping'] = True
+	
 	
 	context = {'items':items ,'order':order,'orderItems':orderItems}
 	return render(request, 'store/cart.html', context)
@@ -49,18 +85,55 @@ def cart(request):
 def checkout(request):
 	# logged in user check
 	if request.user.is_authenticated:
+
 		customer = request.user.customer
 		# create an order or query the order if already created
 		order, created = Order.objects.get_or_create(customer=customer, complete=False)
 		# get all order item that parent(order) has
 		items = order.orderitem_set.all()
 		orderItems = order.get_cart_total
+
 	else:
+
+		try:
+			cart = json.loads(request.COOKIES['cart'])
+		except:
+			cart = {}
+
+			print('CART:' , cart)
+
 		items = []
 		order = {'get_cart_total':0, 'get_cart_items':0,'shipping':False}
-		orderItems = ['get_cart_total']
+		orderItems = order['get_cart_total']
+
+		for i in cart:
+			# cart logo update
+			orderItems += cart[i]['quantity']
+
+			product = Product.objects.get(id=i)
+
+			total = (product.price * cart[i]['quantity'])
+
+			order['get_cart_items'] += total
+			order['get_cart_total'] += cart[i]['quantity']
+
+			item = {'product':{
+			'id':product.id,
+			'name':product.name,
+			'price':product.price,
+			'image':product.image
+			},
+			'quantity':cart[i]['quantity'],	
+			'get_total':total
+			} 
+			items.append(item)
+
+			# phycal item
+			if product.digital == False:
+				# show shipping form
+				order['shipping'] = True
 	
-	context = {'items':items ,'order':order,'orderItems':orderItems}
+	context = {'items':items , 'order':order, 'orderItems':orderItems}
 	return render(request, 'store/checkout.html', context)
 
 
@@ -126,6 +199,15 @@ def processOrder(request):
 				)
 	else:
 		print ("User is not authenticated")
+		print('COOKIE', request.COOKIES)
+
+		name = data['form']['name']
+		email = data['form']['email']
+
+		customer, created = Customer.objects.get_or_create(email=email)
+		# if customer wants to use the same email but different name
+		customer.name = name
+		customer.save()
 
 	return JsonResponse('payment submitted...', safe= False)
 
