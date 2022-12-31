@@ -101,7 +101,7 @@
 		event.preventDefault()
 		console.log('Form submitted')
 
-		// hide shipping form-button
+		// hide shipping form
 		document.getElementById('form-button').classList.add('hidden')
 
 		// show payment button
@@ -138,10 +138,6 @@
 			shippingForm.zipcode = form.zipcode.value
 		}
 
-		if(shipping == 'True' && user == 'AnonymousUser'){
-
-		}
-
 		// fill user name and email for non signed in users
 		if(user == 'AnonymousUser'){
 			userFormData.name = form.name.value
@@ -170,10 +166,6 @@
 		.then((data) => {
 			console.log('success',data)
 			window.alert('Success')
-			// clear cart cookie after payment done
-			cart = {}
-			document.cookie = 'cart=' + JSON.stringify(cart) + ";domain=;path=/";
-
 			window.location.href = "{% url 'store' %}"
 		})
 	}
